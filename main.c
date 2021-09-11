@@ -15,32 +15,42 @@
 #define ADDRESS_LENGTH 26
 
 char* getInputType(char*);
-int binaryStringToInt(char);
 void binaryToHex(char*, char*);
+void decimalToBinary(int, char*);
+int binaryToDecimal(char*);
+int binaryToTwoComplement(char*);
 void binaryToMIPS(char*, char*);
-char* getInstruction(char*, char*);
+char getInstructionType(char*);
+void getInstruction(char*, char*, char*);
+int binaryStringToInt(char);
 char hexVal(int);
 
 int main() {
     char userInput[MAX_LENGTH], binaryRep[BINARY_LENGTH + 1], hexRep[HEX_LENGTH + 1], mipsRep[MAX_LENGTH];
     
-    printf("------------------------\n");
-    printf("Input a BINARY/HEX to convert to equivalent MIPS instruction.\n");
-    printf("Input a MIPS instruction to convert to equivalent BINARY/HEX encoding.\n");
-    printf("------------------------\n");
-    printf("Your input: ");
+    printf("\n------------------------\n");
+    printf("MIPS-BINARY-MIPS\n\n");
+    printf("With me, I can help you to:\n");
+    printf("1) Convert BINARY machine code to equivalent MIPS instruction\n");
+    printf("2) Convert HEX machine code to equivalent MIPS instruction.\n");
+    printf("3) Convert MIPS instruction to equivalent BINARY machine code.\n");
+    printf("4) Convert MIPS instruction to equivalent HEX machine code.\n");
+    printf("------------------------\n\n");
+    printf("Input BINARY/HEX/MIPS: ");
     fgets(userInput, MAX_LENGTH, stdin);
     if (userInput[strlen(userInput) - 1] == '\n') {
         userInput[strlen(userInput) - 1] = '\0';
     }
-    printf("------------------------\n");
+    printf("\n------------------------\n\n");
     printf("You have inputted: %s\n", userInput);
-
-
     printf("Input Type: %s\n", getInputType(userInput));
+    printf("\n------------------------\n\n");
+    printf("OUTPUT:\n\n");
+
     binaryToMIPS(userInput, mipsRep);
 
-    // 00000001010010110100100000100000 -> add $1, $2, $3
+    printf("\n\n------------------------\n");
+
     return 0;
 }
 
@@ -52,112 +62,239 @@ char* getInputType(char *input) {
     return strlen(input) == HEX_LENGTH ? "HEX" : "BINARY";
 }
 
-void binaryToHex(char *binary, char *hexRep) {
+void binaryToHex(char *binary, char *output) {
     int value = 0;
-    for (int i = 0; i < BINARY_LENGTH; i ++) {
-        value += (binaryStringToInt(*(binary + i))) * (int) pow(2, 3 - (i % 4));
+    int nBits = strlen(binary);
+    int totalHexLengthRequired = (nBits / 4) + (nBits % 4 == 0 ? 0 : 1);
+    int counter = 1;
+    for (int i = nBits - 1; i >= 0; i --) {
+        value += (binaryStringToInt(*(binary + i))) * (int) pow(2, (nBits - 1 - i) % 4);
 
-        if ((i != 0 && i % 4 == 3)) {
-            hexRep[(i / 4)] = hexVal(value);
+        if ((nBits - 1 - i) % 4 == 3 || i == 0) {
+            output[totalHexLengthRequired - counter] = hexVal(value);
             value = 0;
+            counter ++;
         }
     }
-    hexRep[8] = '\0';
+
+    output[totalHexLengthRequired] = '\0';
+}
+
+void decimalToBinary(int decimal, char *binaryRep) {
+	int value = 0;
+    int nBits = sizeof(binaryRep) / sizeof(binaryRep[0]);
+    int counter = 1;
+	
+    while (decimal != 0) {
+        binaryRep[nBits - counter] = decimal % 2 + '0';
+        decimal /= 2;
+        counter ++;
+    }
+}
+
+int binaryToDecimal(char *binaryRep) {
+	int value = 0;
+    int nBits = strlen(binaryRep);
+    for (int i = 0; i < nBits; i ++) {
+        value += (binaryStringToInt(*(binaryRep + i))) * (int) pow(2, nBits - i - 1);
+    }
+    return value;
+}
+
+int binaryToTwoComplement(char *binaryRep) {
+	int value = 0;
+    int nBits = strlen(binaryRep);
+    for (int i = 0; i < nBits; i ++) {
+        if (i == 0 && binaryStringToInt(*(binaryRep + i)) == 1) {
+            value -= binaryStringToInt(*(binaryRep + i)) * (int) pow(2, nBits - i - 1);
+            continue;
+        }
+        value += (binaryStringToInt(*(binaryRep + i))) * (int) pow(2, nBits - i - 1);
+    }
+    return value;
 }
 
 void binaryToMIPS(char *binary, char *mips) {
     char opCode[OPCODE_LENGTH + 1];
-
-    char immediate[OPCODE_LENGTH];
-    char address[OPCODE_LENGTH];
-    
-    for (int i = 0; i < 6; i ++) {
+    for (int i = 0; i < OPCODE_LENGTH; i ++) {
         opCode[i] = binary[i];
     }
     opCode[OPCODE_LENGTH] = '\0';
 
-    if (strcmp(opCode, "000000") == 0) {
-        char rs[RS_LENGTH];
-        char rt[RT_LENGTH];
-        char rd[RD_LENGTH];
-        char shamt[SHAMT_LENGTH];
-        char fnCode[FN_LENGTH + 1];
+    char instructionType = getInstructionType(opCode);
+    int offset = OPCODE_LENGTH;
 
-        for (int j = BINARY_LENGTH - 6; j < BINARY_LENGTH; j ++) {
-            fnCode[j - BINARY_LENGTH + 6] = binary[j];
+    switch (instructionType) {
+        case 'R': {
+            char rs[RS_LENGTH + 1], rt[RT_LENGTH + 1], rd[RD_LENGTH + 1], shamt[SHAMT_LENGTH + 1], fnCode[FN_LENGTH + 1], instruction[10];
+
+            for (int i = 0; i < RS_LENGTH; i ++) {
+                rs[i] = binary[offset + i];
+            }
+            rs[RS_LENGTH] = '\0';
+            offset += RS_LENGTH;
+
+            for (int i = 0; i < RT_LENGTH; i ++) {
+                rt[i] = binary[offset + i];
+            }
+            rt[RT_LENGTH] = '\0';
+            offset += RT_LENGTH;
+
+            for (int i = 0; i < RD_LENGTH; i ++) {
+                rd[i] = binary[offset + i];
+            }
+            rd[RD_LENGTH] = '\0';
+            offset += RD_LENGTH;
+
+            for (int i = 0; i < SHAMT_LENGTH; i ++) {
+                shamt[i] = binary[offset + i];
+            }
+            shamt[SHAMT_LENGTH] = '\0';
+            offset += SHAMT_LENGTH;
+
+            for (int i = 0; i < FN_LENGTH; i ++) {
+                fnCode[i] = binary[offset + i];
+            }
+            fnCode[FN_LENGTH] = '\0';
+
+            getInstruction(opCode, fnCode, instruction);
+
+            if (strcmp(instruction, "sll") == 0 || strcmp(instruction, "srl") == 0) {
+                printf("%s $%d, $%d, %d", instruction, binaryToDecimal(rd), binaryToDecimal(rt), binaryToDecimal(shamt));
+                break;
+            }
+
+            printf("%s $%d, $%d, $%d", instruction, binaryToDecimal(rd), binaryToDecimal(rs), binaryToDecimal(rt));
+            break;
         }
-        fnCode[FN_LENGTH] = '\0';
-    }
+        case 'I': {
+            char rs[RS_LENGTH + 1], rt[RT_LENGTH + 1], immediate[IMMEDIATE_LENGTH + 1], instruction[10];
+            for (int i = 0; i < RS_LENGTH; i ++) {
+                rs[i] = binary[offset + i];
+            }
+            rs[RS_LENGTH] = '\0';
+            offset += RS_LENGTH;
 
-    //TODO
+            for (int i = 0; i < RT_LENGTH; i ++) {
+                rt[i] = binary[offset + i];
+            }
+            rt[RT_LENGTH] = '\0';
+            offset += RT_LENGTH;
+
+            for (int i = 0; i < IMMEDIATE_LENGTH; i ++) {
+                immediate[i] = binary[offset + i];
+            }
+            immediate[IMMEDIATE_LENGTH] = '\0';
+
+            getInstruction(opCode, NULL, instruction);
+
+            if (strcmp(instruction, "lw") == 0 || strcmp(instruction, "sw") == 0) {
+                printf("%s $%d, %d($%d)", instruction, binaryToDecimal(rt), binaryToTwoComplement(immediate), binaryToDecimal(rs));
+                break;
+            }
+
+            if (strcmp(instruction, "beq") == 0 || strcmp(instruction, "bne") == 0) {
+                printf("%s $%d, $%d, %d", instruction, binaryToDecimal(rs), binaryToDecimal(rt), binaryToTwoComplement(immediate));
+                break;
+            }
+
+            printf("%s $%d, $%d, %d", instruction, binaryToDecimal(rt), binaryToDecimal(rs), binaryToTwoComplement(immediate));
+            break;
+        }
+        case 'J': {
+            char address[ADDRESS_LENGTH + 1], addressHex[9], instruction[10];
+            for (int i = 0; i < ADDRESS_LENGTH; i ++) {
+                address[i] = binary[offset + i];
+            }
+            address[ADDRESS_LENGTH] = '\0';
+
+            getInstruction(opCode, NULL, instruction);
+            binaryToHex(address, addressHex);
+
+            printf("%s 0x%s", instruction, addressHex);
+            break;
+        }
+    }
 }
 
-char* getInstruction(char *opCode, char *fnCode) {
+char getInstructionType(char *opCode) {
+    if (strcmp(opCode, "000000") == 0) {
+        return 'R';
+    }
+
+    if (strcmp(opCode, "000010") == 0 || strcmp(opCode, "000011") == 0) {
+        return 'J';
+    }
+    
+    return 'I';
+}
+
+void getInstruction(char *opCode, char *fnCode, char *output) {
     if (strcmp(opCode, "001000") == 0) {
-        return "addi";
+        strcpy(output, "addi");
     } else if (strcmp(opCode, "001001") == 0) {
-        return "addiu";
+        strcpy(output, "addiu");
     } else if (strcmp(opCode, "001100") == 0) {
-        return "andi";
+        strcpy(output, "andi");
     } else if (strcmp(opCode, "000100") == 0) {
-        return "beq";
+        strcpy(output, "beq");
     } else if (strcmp(opCode, "000101") == 0) {
-        return "bne";
+        strcpy(output, "bne");
     } else if (strcmp(opCode, "000010") == 0) {
-        return "j";
+        strcpy(output, "j");
     } else if (strcmp(opCode, "000011") == 0) {
-        return "jal";
+        strcpy(output, "jal");
     } else if (strcmp(opCode, "100100") == 0) {
-        return "lbu";
+        strcpy(output, "lbu");
     } else if (strcmp(opCode, "100101") == 0) {
-        return "lhu";
+        strcpy(output, "lhu");
     } else if (strcmp(opCode, "110000") == 0) {
-        return "ll";
+        strcpy(output, "ll");
     } else if (strcmp(opCode, "001111") == 0) {
-        return "lui";
+        strcpy(output, "lui");
     } else if (strcmp(opCode, "100011") == 0) {
-        return "lw";
+        strcpy(output, "lw");
     } else if (strcmp(opCode, "001101") == 0) {
-        return "ori";
+        strcpy(output, "ori");
     } else if (strcmp(opCode, "001010") == 0) {
-        return "slti";
+        strcpy(output, "slti");
     } else if (strcmp(opCode, "001011") == 0) {
-        return "sltiu";
+        strcpy(output, "sltiu");
     } else if (strcmp(opCode, "101000") == 0) {
-        return "sb";
+        strcpy(output, "sb");
     } else if (strcmp(opCode, "111000") == 0) {
-        return "sc";
+        strcpy(output, "sc");
     } else if (strcmp(opCode, "101001") == 0) {
-        return "sh";
+        strcpy(output, "sh");
     } else if (strcmp(opCode, "101011") == 0) {
-        return "sw";
+        strcpy(output, "sw");
     }
 
     if (strcmp(opCode, "000000") == 0) {
         if (strcmp(fnCode, "100000") == 0) {
-            return "add";
+            strcpy(output, "add");
         } else if (strcmp(fnCode, "100001") == 0) {
-            return "addu";
+            strcpy(output, "addu");
         } else if (strcmp(fnCode, "100100") == 0) {
-            return "and";
+            strcpy(output, "and");
         } else if (strcmp(fnCode, "001000") == 0) {
-            return "jr";
+            strcpy(output, "jr");
         } else if (strcmp(fnCode, "100111") == 0) {
-            return "nor";
+            strcpy(output, "nor");
         } else if (strcmp(fnCode, "100101") == 0) {
-            return "or";
+            strcpy(output, "or");
         } else if (strcmp(fnCode, "101010") == 0) {
-            return "slt";
+            strcpy(output, "slt");
         } else if (strcmp(fnCode, "101011") == 0) {
-            return "sltu";
+            strcpy(output, "sltu");
         } else if (strcmp(fnCode, "000000") == 0) {
-            return "sll";
+            strcpy(output, "sll");
         } else if (strcmp(fnCode, "000010") == 0) {
-            return "srl";
+            strcpy(output, "srl");
         } else if (strcmp(fnCode, "100010") == 0) {
-            return "sub";
+            strcpy(output, "sub");
         } else if (strcmp(fnCode, "100011") == 0) {
-            return "subu";
+            strcpy(output, "subu");
         }
     }
 }
