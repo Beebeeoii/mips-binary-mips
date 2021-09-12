@@ -13,9 +13,13 @@
 #define FN_LENGTH 6
 #define IMMEDIATE_LENGTH 16
 #define ADDRESS_LENGTH 26
+#define INPUT_MIPS 0
+#define INPUT_BINARY 1
+#define INPUT_HEX 2
 
-char* getInputType(char*);
+int getInputType(char*);
 void binaryToHex(char*, char*);
+void hexToBinary(char*, char*);
 void decimalToBinary(int, char*);
 int binaryToDecimal(char*);
 int binaryToTwoComplement(char*);
@@ -23,7 +27,8 @@ void binaryToMIPS(char*, char*);
 char getInstructionType(char*);
 void getInstruction(char*, char*, char*);
 int binaryStringToInt(char);
-char hexVal(int);
+char valToHex(int);
+int hexToVal(char);
 
 int main() {
     char userInput[MAX_LENGTH], binaryRep[BINARY_LENGTH + 1], hexRep[HEX_LENGTH + 1], mipsRep[MAX_LENGTH];
@@ -43,23 +48,34 @@ int main() {
     }
     printf("\n------------------------\n\n");
     printf("You have inputted: %s\n", userInput);
-    printf("Input Type: %s\n", getInputType(userInput));
+    int inputType = getInputType(userInput);
+    printf("Input Type: %s\n", inputType == INPUT_MIPS ? "MIPS" : inputType == INPUT_HEX ? "HEX" : "BINARY");
     printf("\n------------------------\n\n");
     printf("OUTPUT:\n\n");
 
-    binaryToMIPS(userInput, mipsRep);
+    switch (inputType) {
+        case INPUT_MIPS:
+            break;
+        case INPUT_BINARY:
+            binaryToMIPS(userInput, mipsRep);
+            break;
+        case INPUT_HEX:
+            hexToBinary(userInput, binaryRep);
+            binaryToMIPS(binaryRep, mipsRep);
+            break;
+    }
 
     printf("\n\n------------------------\n");
 
     return 0;
 }
 
-char* getInputType(char *input) {
+int getInputType(char *input) {
     if (strchr(input, ' ')) {
-        return "MIPS";
+        return INPUT_MIPS;
     }
 
-    return strlen(input) == HEX_LENGTH ? "HEX" : "BINARY";
+    return strlen(input) == HEX_LENGTH ? INPUT_HEX : INPUT_BINARY;
 }
 
 void binaryToHex(char *binary, char *output) {
@@ -71,7 +87,7 @@ void binaryToHex(char *binary, char *output) {
         value += (binaryStringToInt(*(binary + i))) * (int) pow(2, (nBits - 1 - i) % 4);
 
         if ((nBits - 1 - i) % 4 == 3 || i == 0) {
-            output[totalHexLengthRequired - counter] = hexVal(value);
+            output[totalHexLengthRequired - counter] = valToHex(value);
             value = 0;
             counter ++;
         }
@@ -80,13 +96,25 @@ void binaryToHex(char *binary, char *output) {
     output[totalHexLengthRequired] = '\0';
 }
 
-void decimalToBinary(int decimal, char *binaryRep) {
-	int value = 0;
-    int nBits = sizeof(binaryRep) / sizeof(binaryRep[0]);
+void hexToBinary(char *hex, char *output) {
+    for (int i = 0; i < strlen(hex); i ++) {
+        char binaryPartition[5] = {'0', '0', '0', '0', '\0'};
+        decimalToBinary(hexToVal(hex[strlen(hex) - 1 - i]), binaryPartition);
+
+        for (int j = 0; j < strlen(binaryPartition); j ++) {
+            output[BINARY_LENGTH - (strlen(binaryPartition) * (i + 1)) + j] = binaryPartition[j];
+        }
+    }
+    output[BINARY_LENGTH] = '\0';
+    printf("BINARY REP: %s\n", output);
+}
+
+void decimalToBinary(int decimal, char *output) {
+    int nBits = strlen(output);
     int counter = 1;
 	
-    while (decimal != 0) {
-        binaryRep[nBits - counter] = decimal % 2 + '0';
+    while (decimal != 0 || counter <= nBits) {
+        output[nBits - counter] = decimal % 2 + '0';
         decimal /= 2;
         counter ++;
     }
@@ -303,7 +331,7 @@ int binaryStringToInt(char binaryChar) {
     return binaryChar == '1' ? 1 : 0;
 }
 
-char hexVal(int value) {
+char valToHex(int value) {
     switch (value) {
         case 0:
             return '0';
@@ -337,6 +365,45 @@ char hexVal(int value) {
             return 'E';
         case 15:
             return 'F';
+        default:
+            return 0;
+    }
+}
+
+int hexToVal(char hex) {
+    switch (hex) {
+        case '0':
+            return 0;
+        case '1':
+            return 1;
+        case '2':
+            return 2;
+        case '3':
+            return 3;
+        case '4':
+            return 4;
+        case '5':
+            return 5;
+        case '6':
+            return 6;
+        case '7':
+            return 7;
+        case '8':
+            return 8;
+        case '9':
+            return 9;
+        case 'A':
+            return 10;
+        case 'B':
+            return 11;
+        case 'C':
+            return 12;
+        case 'D':
+            return 13;
+        case 'E':
+            return 14;
+        case 'F':
+            return 15;
         default:
             return 0;
     }
