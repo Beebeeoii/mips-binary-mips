@@ -47,7 +47,7 @@ int main() {
         userInput[strlen(userInput) - 1] = '\0';
     }
     printf("\n------------------------\n\n");
-    printf("You have inputted: %s\n", userInput);
+    printf("Your Input: %s\n", userInput);
     int inputType = getInputType(userInput);
     printf("Input Type: %s\n", inputType == INPUT_MIPS ? "MIPS" : inputType == INPUT_HEX ? "HEX" : "BINARY");
     printf("\n------------------------\n\n");
@@ -61,12 +61,15 @@ int main() {
             break;
         case INPUT_HEX:
             hexToBinary(userInput, binaryRep);
+            printf("BINARY EQUIVALENT: %s\n", binaryRep);
             binaryToMIPS(binaryRep, mipsRep);
+            printf("MIPS INSTRUCTION : %s\n\n", mipsRep);
             break;
     }
 
-    printf("\n\n------------------------\n");
-
+    printf("------------------------\n");
+    printf("Press ENTER key to exit\n");  
+    getchar();
     return 0;
 }
 
@@ -106,7 +109,7 @@ void hexToBinary(char *hex, char *output) {
         }
     }
     output[BINARY_LENGTH] = '\0';
-    printf("BINARY REP: %s\n", output);
+
 }
 
 void decimalToBinary(int decimal, char *output) {
@@ -142,7 +145,7 @@ int binaryToTwoComplement(char *binaryRep) {
     return value;
 }
 
-void binaryToMIPS(char *binary, char *mips) {
+void binaryToMIPS(char *binary, char *output) {
     char opCode[OPCODE_LENGTH + 1];
     for (int i = 0; i < OPCODE_LENGTH; i ++) {
         opCode[i] = binary[i];
@@ -188,11 +191,11 @@ void binaryToMIPS(char *binary, char *mips) {
             getInstruction(opCode, fnCode, instruction);
 
             if (strcmp(instruction, "sll") == 0 || strcmp(instruction, "srl") == 0) {
-                printf("%s $%d, $%d, %d", instruction, binaryToDecimal(rd), binaryToDecimal(rt), binaryToDecimal(shamt));
+                snprintf(output, MAX_LENGTH, "%s $%d, $%d, %d", instruction, binaryToDecimal(rd), binaryToDecimal(rt), binaryToDecimal(shamt));
                 break;
             }
 
-            printf("%s $%d, $%d, $%d", instruction, binaryToDecimal(rd), binaryToDecimal(rs), binaryToDecimal(rt));
+            snprintf(output, MAX_LENGTH, "%s $%d, $%d, $%d", instruction, binaryToDecimal(rd), binaryToDecimal(rs), binaryToDecimal(rt));
             break;
         }
         case 'I': {
@@ -217,16 +220,16 @@ void binaryToMIPS(char *binary, char *mips) {
             getInstruction(opCode, NULL, instruction);
 
             if (strcmp(instruction, "lw") == 0 || strcmp(instruction, "sw") == 0) {
-                printf("%s $%d, %d($%d)", instruction, binaryToDecimal(rt), binaryToTwoComplement(immediate), binaryToDecimal(rs));
+                snprintf(output, MAX_LENGTH, "%s $%d, %d($%d)", instruction, binaryToDecimal(rt), binaryToTwoComplement(immediate), binaryToDecimal(rs));
                 break;
             }
 
             if (strcmp(instruction, "beq") == 0 || strcmp(instruction, "bne") == 0) {
-                printf("%s $%d, $%d, %d", instruction, binaryToDecimal(rs), binaryToDecimal(rt), binaryToTwoComplement(immediate));
+                snprintf(output, MAX_LENGTH, "%s $%d, $%d, %d", instruction, binaryToDecimal(rs), binaryToDecimal(rt), binaryToTwoComplement(immediate));
                 break;
             }
 
-            printf("%s $%d, $%d, %d", instruction, binaryToDecimal(rt), binaryToDecimal(rs), binaryToTwoComplement(immediate));
+            snprintf(output, MAX_LENGTH, "%s $%d, $%d, %d", instruction, binaryToDecimal(rt), binaryToDecimal(rs), binaryToTwoComplement(immediate));
             break;
         }
         case 'J': {
@@ -239,7 +242,7 @@ void binaryToMIPS(char *binary, char *mips) {
             getInstruction(opCode, NULL, instruction);
             binaryToHex(address, addressHex);
 
-            printf("%s 0x%s", instruction, addressHex);
+            snprintf(output, MAX_LENGTH, "%s 0x%s", instruction, addressHex);
             break;
         }
     }
