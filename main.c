@@ -55,9 +55,13 @@ int main() {
 
     switch (inputType) {
         case INPUT_MIPS:
+        // TODO
             break;
         case INPUT_BINARY:
+            binaryToHex(userInput, hexRep);
+            printf("HEX EQUIVALENT: %s\n", hexRep);
             binaryToMIPS(userInput, mipsRep);
+            printf("MIPS INSTRUCTION : %s\n\n", mipsRep);
             break;
         case INPUT_HEX:
             hexToBinary(userInput, binaryRep);
